@@ -33,7 +33,6 @@
     [_dataSourceArr addObjectsFromArray:dataSrouceArr];
 
     _pageCtrl.numberOfPages = _dataSourceArr.count;
-    self.pageControlHidden = _dataSourceArr.count <= 1;
 
     [self reloadData];
     [self startTimer];
@@ -145,6 +144,7 @@
     {
         _pageCtrl.frame = CGRectMake((self.bounds.size.width - tmpSize.width) / 2.0, self.bounds.size.height - tmpSize.height, tmpSize.width, tmpSize.height);
     }
+    _pageCtrl.hidden = _pageControlHidden;
 }
 
 - (void)setup
@@ -183,7 +183,7 @@
     {
         [self setCustomItemView:nil];
     }
-    
+
     // pageCtrl
     {
         self.pageCtrl = [[UIPageControl alloc] init];
