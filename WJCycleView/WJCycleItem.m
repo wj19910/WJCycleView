@@ -20,7 +20,6 @@
 }
 
 + (instancetype)itemWithRemoteUrlString:(NSString *)urlStr
-
 {
     return [WJCycleItem itemWithRemoteUrl:[NSURL URLWithString:urlStr]];
 }

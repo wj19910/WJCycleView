@@ -7,7 +7,7 @@
 //
 
 #import "WJCycleView.h"
-#import "WJCycleItemView.h"
+#import "WJWeakProxy.h"
 
 
 @interface WJCycleView () <UIScrollViewDelegate>
@@ -17,14 +17,11 @@
 @property (nonatomic, strong) UIView<WJCycleItemViewProtocol> *nextItemView;
 @property (nonatomic, strong) UIPageControl *pageCtrl;
 
-
 @property (nonatomic, strong) NSMutableArray<id<WJCycleItemProtocol>> *dataSourceArr; /// 数据源
 @property (nonatomic, assign) NSInteger itemIdx; /// 当前显示的数据序号
+@property (nonatomic, strong) NSTimer *timer;
 
-@property (nonatomic, assign) CGPoint startDragOffset;
-@property (nonatomic, strong) dispatch_source_t timer; // 定时器
-@property (nonatomic, assign) BOOL isTimerActive;
-
+@property (nonatomic, assign) CGPoint startDragOffset;  // 开始拖拽时的偏移量位置
 @end
 
 @implementation WJCycleView
@@ -35,8 +32,11 @@
     [_dataSourceArr removeAllObjects];
     [_dataSourceArr addObjectsFromArray:dataSrouceArr];
 
+    _pageCtrl.numberOfPages = _dataSourceArr.count;
+    self.pageControlHidden = _dataSourceArr.count <= 1;
+
     [self reloadData];
-    [self resumeTimer];
+    [self startTimer];
 }
 
 - (void)setCustomItemView:(UIView<WJCycleItemViewProtocol> *(^)(void))customItemView
@@ -67,11 +67,45 @@
     [_scrollView addSubview:_nextItemView];
 }
 
+- (void)setPageControlHidden:(BOOL)pageControlHidden
+{
+    _pageControlHidden = pageControlHidden;
+    _pageCtrl.hidden = _pageControlHidden;
+}
 
-#pragma mark - Private System
+- (void)setAutoScrollDisable:(BOOL)autoScrollDisable
+{
+    _autoScrollDisable = autoScrollDisable;
+
+    if(_autoScrollDisable)
+    {
+        [self cancelTimer];
+    }
+    else
+    {
+        [self startTimer];
+    }
+}
+
+- (void)setAutoScrollTimeInterval:(NSTimeInterval)autoScrollTimeInterval
+{
+    _autoScrollTimeInterval = MAX(1, MIN(autoScrollTimeInterval, NSIntegerMax));
+
+    // 替换自动滚动时间后，重启定时器
+    [self cancelTimer];
+    [self startTimer];
+}
+
+
+
+#pragma mark - Private
 - (void)dealloc
 {
-    [self destroyTimer];
+    [self cancelTimer];
+
+#ifdef DEBUG
+    NSLog(@"%s", __func__);
+#endif
 }
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder
@@ -97,11 +131,12 @@
 - (void)layoutSubviews
 {
     [super layoutSubviews];
+
     _scrollView.frame = self.bounds;
-    
+
     CGSize tmpSize = [_pageCtrl sizeForNumberOfPages:_pageCtrl.numberOfPages];
     tmpSize.width += 16.0;
-    tmpSize.height -= 8.0;
+    tmpSize.height -= 16.0;
     if(_pageControlAlignment == WJCyclePageControlAlignmentRight)
     {
         _pageCtrl.frame = CGRectMake(self.bounds.size.width - tmpSize.width, self.bounds.size.height - tmpSize.height, tmpSize.width, tmpSize.height);
@@ -112,28 +147,17 @@
     }
 }
 
-- (void)willMoveToSuperview:(UIView *)newSuperview
-{
-    if(nil == newSuperview)
-    {
-        [self destroyTimer];
-    }
-    else
-    {
-        [self reloadData];
-    }
-}
-
-#pragma mark - Private Custom
 - (void)setup
 {
     // public
     {
-        _scrollDirection = WJCycleScrollDirectionHorizontal;
-        _autoScrollTimeInterval = 4.0;
-        _dataSourceArr = [NSMutableArray array];
-        _itemIdx = 0;
-        _pageControlAlignment = WJCyclePageControlAlignmentCenter;
+        self.scrollDirection = WJCycleScrollDirectionHorizontal;
+        self.pageControlAlignment = WJCyclePageControlAlignmentRight;
+        self.autoScrollDisable = NO;
+        self.autoScrollTimeInterval = 2.0;
+
+        self.dataSourceArr = [NSMutableArray array];
+        self.itemIdx = 0;
     }
 
     // self
@@ -146,6 +170,7 @@
     // scrollView
     {
         self.scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
+        _scrollView.backgroundColor = [UIColor clearColor];
         _scrollView.showsHorizontalScrollIndicator = NO;
         _scrollView.showsVerticalScrollIndicator = NO;
         _scrollView.bounces = NO;
@@ -163,10 +188,10 @@
     {
         self.pageCtrl = [[UIPageControl alloc] init];
         _pageCtrl.hidesForSinglePage = YES;
-        if(nil != _pageCtrlConfiguration)
+        if(nil != _pageControllConfiguration)
         {
             __weak typeof(self) weakSelf = self;
-            _pageCtrlConfiguration(weakSelf.pageCtrl);
+            _pageControllConfiguration(weakSelf.pageCtrl);
         }
         [self addSubview:_pageCtrl];
     }
@@ -181,111 +206,96 @@
     }
 }
 
-#pragma mark - Timer
-- (void)initTimer
-{
-    __weak typeof(self) weakSelf = self;
-    self.timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
-    dispatch_source_set_timer(_timer, dispatch_walltime(NULL, 0), (_autoScrollTimeInterval * NSEC_PER_SEC), 0);  // 每秒执行
-    dispatch_source_set_event_handler(_timer, ^{
-        [weakSelf timerTriggerAction];
-    });
-}
-
-- (void)destroyTimer
-{
-    if(_timer)
-    {
-        if(!_isTimerActive)
-        {
-            dispatch_resume(_timer);
-        }
-        self.isTimerActive = NO;
-        dispatch_source_cancel(_timer);
-        self.timer = nil;
-    }
-}
-
-- (void)resumeTimer
-{
-    if(_dataSourceArr.count <= 1) { return; }
-
-    if(!_timer)
-    {
-        [self initTimer];
-    }
-
-    if(!_isTimerActive)
-    {
-        self.isTimerActive = YES;
-        dispatch_resume(_timer);
-    }
-}
-
-- (void)suspendTimer
-{
-    if(_timer && _isTimerActive)
-    {
-        dispatch_suspend(_timer);
-    }
-}
-
-- (void)timerTriggerAction
-{
-    CGPoint targetOffset = _scrollDirection == WJCycleScrollDirectionHorizontal ? CGPointMake(_scrollView.contentOffset.x + _scrollView.bounds.size.width, _scrollView.contentOffset.y) : CGPointMake(_scrollView.contentOffset.x, _scrollView.contentOffset.y + _scrollView.bounds.size.height);
-    [_scrollView setContentOffset:targetOffset animated:YES];
-}
-
-#pragma mark - ReloadData
+#pragma mark - reloadData
 - (void)reloadData
 {
-    if(_dataSourceArr.count < 1) { return; }
+    // 越界预处理
+    if(_dataSourceArr.count <= 0) return;
 
-    // config pageControl
-    _pageCtrl.numberOfPages = _dataSourceArr.count;
-    _pageCtrl.currentPage = _itemIdx;
+    // 配置数据源
+    if(_dataSourceArr.count > 1)
+    {
+        if(_scrollDirection == WJCycleScrollDirectionHorizontal)
+        {
+            _scrollView.contentSize = CGSizeMake(_scrollView.bounds.size.width * 3, _scrollView.bounds.size.height);
+            [_scrollView setContentOffset:CGPointMake(_scrollView.bounds.size.width, 0) animated:NO];
 
+            _previousItemView.frame = CGRectMake(_scrollView.bounds.size.width * 0, 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+            _curItemView.frame = CGRectMake(_scrollView.bounds.size.width * 1, 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+            _nextItemView.frame = CGRectMake(_scrollView.bounds.size.width * 2, 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+        }
+        else
+        {
+            _scrollView.contentSize = CGSizeMake(_scrollView.bounds.size.width, _scrollView.bounds.size.height * 3);
+            [_scrollView setContentOffset:CGPointMake(0, _scrollView.bounds.size.height) animated:NO];
 
-    // config itemViews's data
+            _previousItemView.frame = CGRectMake(0, _scrollView.bounds.size.height * 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+            _curItemView.frame = CGRectMake(0, _scrollView.bounds.size.height * 1, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+            _nextItemView.frame = CGRectMake(0, _scrollView.bounds.size.height * 2, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+        }
+    }
+    else
+    {
+        _scrollView.contentSize = _scrollView.bounds.size;
+        [_scrollView setContentOffset:CGPointZero animated:NO];
+
+        _previousItemView.frame = _scrollView.bounds;
+        _curItemView.frame = _scrollView.bounds;
+        _nextItemView.frame = _scrollView.bounds;
+    }
     [_curItemView setItem:_dataSourceArr[_itemIdx]];
     [_previousItemView setItem:_dataSourceArr[_itemIdx - 1 >= 0 ? _itemIdx - 1 : _dataSourceArr.count - 1]];
     [_nextItemView setItem:_dataSourceArr[_itemIdx + 1 >= _dataSourceArr.count ? 0 : _itemIdx + 1]];
 
 
-    // layoutItemViews
-    BOOL canScroll = _dataSourceArr.count > 1; // 标志位，记录数据源个数是否大于1，用于判断ScrollView是否可以滚动
+    // 配置 pageCtrl
+    _pageCtrl.currentPage = _itemIdx;
+}
+
+#pragma mark - Timer
+- (void)startTimer
+{
+    [self cancelTimer];
+
+    if(_dataSourceArr.count <= 1 || _autoScrollDisable)
+    {
+        return;
+    }
+
+    self.timer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:_autoScrollTimeInterval] interval:_autoScrollTimeInterval target:[WJWeakProxy proxyWithTarget:self] selector:@selector(timerAction) userInfo:nil repeats:YES];
+    [[NSRunLoop currentRunLoop] addTimer:_timer forMode:NSRunLoopCommonModes];
+}
+
+- (void)cancelTimer
+{
+    if(_timer)
+    {
+        if([_timer isValid])
+        {
+            [_timer invalidate];
+        }
+
+        self.timer = nil;
+    }
+}
+
+- (void)timerAction
+{
     if(_scrollDirection == WJCycleScrollDirectionHorizontal)
     {
-        CGPoint offset = canScroll ? CGPointMake(_scrollView.bounds.size.width, 0) : CGPointZero;
-        _scrollView.contentSize = CGSizeMake(_scrollView.bounds.size.width * (canScroll ? 3 : 1), _scrollView.bounds.size.height);
-        _scrollView.contentOffset = offset;
-
-        _curItemView.frame = CGRectMake(offset.x, offset.y, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
-        _nextItemView.frame = CGRectMake(offset.x + _scrollView.bounds.size.width, offset.y, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
-        _previousItemView.frame = CGRectMake(offset.x - _scrollView.bounds.size.width, offset.y, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+        [_scrollView setContentOffset:CGPointMake(_scrollView.bounds.size.width * 2, 0) animated:YES];
     }
     else
     {
-        CGPoint offset = canScroll ? CGPointMake(0, _scrollView.bounds.size.height) : CGPointZero;
-        _scrollView.contentSize = CGSizeMake(_scrollView.bounds.size.width, _scrollView.bounds.size.height * (canScroll ? 3 : 1));
-        _scrollView.contentOffset = offset;
-
-        _curItemView.frame = CGRectMake(offset.x, offset.y, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
-        _nextItemView.frame = CGRectMake(offset.x, offset.y + _scrollView.bounds.size.height, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
-        _previousItemView.frame = CGRectMake(offset.x, offset.y - _scrollView.bounds.size.height , _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+        [_scrollView setContentOffset:CGPointMake(0, _scrollView.bounds.size.height * 2) animated:YES];
     }
 }
+
 
 #pragma mark - drag or autoScroll
 - (void)loadPreviousItem
 {
-    NSInteger tmpIdx = _itemIdx - 1;
-    if(tmpIdx < 0)
-    {
-        tmpIdx = _dataSourceArr.count - 1;
-    }
-    _itemIdx = tmpIdx;
-
+    self.itemIdx = _itemIdx - 1 >= 0 ? _itemIdx - 1 : _dataSourceArr.count - 1;
 
     UIView<WJCycleItemViewProtocol> *tmpItem = _nextItemView;
     _nextItemView = _curItemView;
@@ -297,12 +307,7 @@
 
 - (void)loadNextItem
 {
-    NSInteger tmpIdx = _itemIdx + 1;
-    if(tmpIdx >= _dataSourceArr.count)
-    {
-        tmpIdx = 0;
-    }
-    _itemIdx = tmpIdx;
+    self.itemIdx = _itemIdx + 1 >= _dataSourceArr.count ? 0 : _itemIdx + 1;
 
     UIView<WJCycleItemViewProtocol>  *tmpItem = _previousItemView;
     _previousItemView = _curItemView;
@@ -312,63 +317,39 @@
     [self reloadData];
 }
 
-- (void)didEndDragScroll
-{
-    if(_scrollDirection == WJCycleScrollDirectionHorizontal)
-    {
-        if(_scrollView.contentOffset.x + _scrollView.bounds.size.width / 2.0 < _startDragOffset.x)
-        {
-            [self loadPreviousItem];
-        }
-        else if(_scrollView.contentOffset.x - _scrollView.bounds.size.width / 2.0 > _startDragOffset.x)
-        {
-            [self loadNextItem];
-        }
-    }
-    else
-    {
-        if(_scrollView.contentOffset.y + _scrollView.bounds.size.height / 2.0 < _startDragOffset.y)
-        {
-            [self loadPreviousItem];
-        }
-        else if(_scrollView.contentOffset.y - _scrollView.bounds.size.height / 2.0 > _startDragOffset.y)
-        {
-            [self loadNextItem];
-        }
-    }
-}
 
 #pragma mark - UIScrollViewDelegate
 
 // 开始拖拽
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
-    [self suspendTimer];
     self.startDragOffset = scrollView.contentOffset;
+
+    // 开始拖拽，暂停定时器
+    [self cancelTimer];
 }
 
 // 完成拖拽
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
 {
-    if(!decelerate) // 没有惯性移动，滚动结束
+    // 完成拖拽，启动定时器
+    [self startTimer];
+}
+
+// 惯性滚动完成
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+{
+    if(scrollView.contentOffset.x < _startDragOffset.x || scrollView.contentOffset.y < _startDragOffset.y)
     {
-        [self didEndDragScroll];
-        [self resumeTimer];
+        [self loadPreviousItem];
     }
     else
     {
-        // will do something in scrollViewDidEndDecelerating:
+        [self loadNextItem];
     }
 }
 
-// 惯性移动结束
-- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
-{
-    [self didEndDragScroll];
-    [self resumeTimer];
-}
-
-// scrollView 确实完成滚动动画
+// scrollView 滚动动画完成
 - (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
 {
     [self loadNextItem];
@@ -376,7 +357,8 @@
 
 
 
+
+
+
+
 @end
-
-
-

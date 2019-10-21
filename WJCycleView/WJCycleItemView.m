@@ -34,23 +34,9 @@ void (^wjCycleItemViewDataSourceHandle)(WJCycleItemView *itemView, WJCycleItem *
     return self;
 }
 
-- (void)layoutSubviews
-{
-    [super layoutSubviews];
-    _imageView.frame = self.bounds;
-}
-
 - (void)setup
 {
     self.backgroundColor = [UIColor clearColor];
-    _imageView = [[UIImageView alloc] init];
-    [self addSubview:_imageView];
-}
-
-- (void)setBackgroundColor:(UIColor *)backgroundColor
-{
-    [super setBackgroundColor:backgroundColor];
-    [_imageView setBackgroundColor:backgroundColor];
 }
 
 + (void)setupItemHandling:(void (^)(WJCycleItemView *itemView, WJCycleItem *item))handle

@@ -11,9 +11,7 @@
 #import "WJCycleItem.h"
 
 
-@interface WJCycleItemView : UIView <WJCycleItemViewProtocol>
-
-@property (nonatomic, strong, readonly) UIImageView *imageView;
+@interface WJCycleItemView : UIImageView <WJCycleItemViewProtocol>
 
 /// 同意配置数据源处理方式（只需设置一次）
 + (void)setupItemHandling:(void (^)(WJCycleItemView *itemView, WJCycleItem *item))handle;
