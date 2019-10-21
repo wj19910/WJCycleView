@@ -33,7 +33,7 @@
         }
         else if(item.type == WJCycleItemType_Remote)
         {
-            [itemView setImageWithURL:item.remoteUrl];
+            [itemView setImageWithURL:item.remoteUrl placeholderImage:[UIImage imageNamed:@"img1"]];
         }
     }];
     
@@ -45,8 +45,7 @@
 - (void)example1
 {
     _eg1.didSelectItem = ^(WJCycleView *cycleView, id<WJCycleItemProtocol> item) {
-        WJCycleItem *obj = (WJCycleItem *)item;
-        NSLog(@"%@", obj.localName);
+        NSLog(@"%@", item.localName);
     };
 
     NSMutableArray *items = [NSMutableArray array];
@@ -61,7 +60,7 @@
 
 - (void)example2
 {
-    WJCycleView *eg2 = [[WJCycleView alloc] init];
+    WJCycleView *eg2 = [[WJCycleView alloc] initWithFrame:CGRectMake(0, _eg1.bounds.size.height, self.view.bounds.size.width, _eg1.bounds.size.height)];
     [self.view addSubview:eg2];
     eg2.translatesAutoresizingMaskIntoConstraints = NO;
     [NSLayoutConstraint constraintWithItem:eg2 attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_eg1 attribute:NSLayoutAttributeBottom multiplier:1.0 constant:.0].active = YES;
@@ -72,14 +71,14 @@
 
     NSMutableArray *items = [NSMutableArray array];
     [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://pic1.win4000.com/wallpaper/e/5736dd532289d.jpg"]];
-    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://i1.mopimg.cn/img/tt/2016-12/928/20161229204917696.jpg"]];
-    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://admin.anzow.com/picture/2011052656296900.jpg"]];
-    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://p1.pstatp.com/large/pgc-image/15369390831534f32418ae5.jpg"]];
+//    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://i1.mopimg.cn/img/tt/2016-12/928/20161229204917696.jpg"]];
+//    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://admin.anzow.com/picture/2011052656296900.jpg"]];
+//    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://p1.pstatp.com/large/pgc-image/15369390831534f32418ae5.jpg"]];
 
     eg2.scrollDirection = WJCycleScrollDirectionVertical;
     [eg2 reloadDataWithSource:items];
     eg2.didSelectItem = ^(WJCycleView *cycleView, id<WJCycleItemProtocol> item) {
-        cycleView.autoScrollDisable = !cycleView.autoScrollDisable;
+        NSLog(@"%@", item.remoteUrl);
     };
 
 }

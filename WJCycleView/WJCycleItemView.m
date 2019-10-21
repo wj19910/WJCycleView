@@ -47,11 +47,18 @@ void (^wjCycleItemViewDataSourceHandle)(WJCycleItemView *itemView, WJCycleItem *
 - (void)setItem:(WJCycleItem *)item
 {
     _item = item;
-    
-    if(nil != wjCycleItemViewDataSourceHandle)
+
+    if(nil != _item)
     {
-        __weak typeof(self) weakSelf = self;
-        wjCycleItemViewDataSourceHandle(weakSelf, weakSelf.item);
+        if(nil != wjCycleItemViewDataSourceHandle)
+        {
+            __weak typeof(self) weakSelf = self;
+            wjCycleItemViewDataSourceHandle(weakSelf, weakSelf.item);
+        }
+    }
+    else
+    {
+        self.image = nil;
     }
 }
 

@@ -154,7 +154,7 @@
         self.scrollDirection = WJCycleScrollDirectionHorizontal;
         self.pageControlAlignment = WJCyclePageControlAlignmentRight;
         self.autoScrollDisable = NO;
-        self.autoScrollTimeInterval = 2.0;
+        self.autoScrollTimeInterval = 4.0;
 
         self.dataSourceArr = [NSMutableArray array];
         self.itemIdx = 0;
@@ -243,6 +243,7 @@
         _curItemView.frame = _scrollView.bounds;
         _nextItemView.frame = _scrollView.bounds;
     }
+
     [_curItemView setItem:_dataSourceArr[_itemIdx]];
     [_previousItemView setItem:_dataSourceArr[_itemIdx - 1 >= 0 ? _itemIdx - 1 : _dataSourceArr.count - 1]];
     [_nextItemView setItem:_dataSourceArr[_itemIdx + 1 >= _dataSourceArr.count ? 0 : _itemIdx + 1]];
