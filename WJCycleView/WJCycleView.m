@@ -32,8 +32,6 @@
     [_dataSourceArr removeAllObjects];
     [_dataSourceArr addObjectsFromArray:dataSrouceArr];
 
-    _pageCtrl.numberOfPages = _dataSourceArr.count;
-
     [self reloadData];
     [self startTimer];
 }
@@ -176,7 +174,6 @@
     {
         _pageCtrl.frame = CGRectMake((self.bounds.size.width - tmpSize.width) / 2.0, self.bounds.size.height - tmpSize.height, tmpSize.width, tmpSize.height);
     }
-    _pageCtrl.hidden = _pageControlHidden;
 }
 
 - (void)setup
@@ -249,7 +246,9 @@
     [_nextItemView setItem:_dataSourceArr[_itemIdx + 1 >= _dataSourceArr.count ? 0 : _itemIdx + 1]];
 
     // 配置 pageCtrl
+    _pageCtrl.numberOfPages = _dataSourceArr.count;
     _pageCtrl.currentPage = _itemIdx;
+    _pageCtrl.hidden = _pageControlHidden || (_dataSourceArr.count <= 1);
 
     [self setNeedsLayout];
 }
@@ -341,13 +340,29 @@
 // 惯性滚动完成
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 {
-    if(scrollView.contentOffset.x < _startDragOffset.x || scrollView.contentOffset.y < _startDragOffset.y)
+    if(_scrollDirection == WJCycleScrollDirectionHorizontal)
     {
-        [self loadPreviousItem];
+        CGFloat halfWidth = scrollView.bounds.size.width / 2.0;
+        if(scrollView.contentOffset.x + halfWidth < _startDragOffset.x)
+        {
+            [self loadPreviousItem];
+        }
+        else if(scrollView.contentOffset.x - halfWidth > _startDragOffset.x)
+        {
+            [self loadNextItem];
+        }
     }
-    else
+    else if(_scrollDirection == WJCycleScrollDirectionVertical)
     {
-        [self loadNextItem];
+        CGFloat halfHeight = scrollView.bounds.size.height / 2.0;
+        if(scrollView.contentOffset.y + halfHeight < _startDragOffset.y)
+        {
+            [self loadPreviousItem];
+        }
+        else if(scrollView.contentOffset.y - halfHeight > _startDragOffset.y)
+        {
+            [self loadNextItem];
+        }
     }
 }
 

@@ -71,9 +71,9 @@
 
     NSMutableArray *items = [NSMutableArray array];
     [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://pic1.win4000.com/wallpaper/e/5736dd532289d.jpg"]];
-//    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://i1.mopimg.cn/img/tt/2016-12/928/20161229204917696.jpg"]];
-//    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://admin.anzow.com/picture/2011052656296900.jpg"]];
-//    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://p1.pstatp.com/large/pgc-image/15369390831534f32418ae5.jpg"]];
+    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://i1.mopimg.cn/img/tt/2016-12/928/20161229204917696.jpg"]];
+    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://admin.anzow.com/picture/2011052656296900.jpg"]];
+    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://p1.pstatp.com/large/pgc-image/15369390831534f32418ae5.jpg"]];
 
     eg2.scrollDirection = WJCycleScrollDirectionVertical;
     [eg2 reloadDataWithSource:items];
