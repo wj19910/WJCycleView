@@ -133,6 +133,38 @@
 
     _scrollView.frame = self.bounds;
 
+    if(_dataSourceArr.count > 1)
+    {
+        if(_scrollDirection == WJCycleScrollDirectionHorizontal)
+        {
+            _scrollView.contentSize = CGSizeMake(_scrollView.bounds.size.width * 3, _scrollView.bounds.size.height);
+            [_scrollView setContentOffset:CGPointMake(_scrollView.bounds.size.width, 0) animated:NO];
+
+            _previousItemView.frame = CGRectMake(_scrollView.bounds.size.width * 0, 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+            _curItemView.frame = CGRectMake(_scrollView.bounds.size.width * 1, 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+            _nextItemView.frame = CGRectMake(_scrollView.bounds.size.width * 2, 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+        }
+        else
+        {
+            _scrollView.contentSize = CGSizeMake(_scrollView.bounds.size.width, _scrollView.bounds.size.height * 3);
+            [_scrollView setContentOffset:CGPointMake(0, _scrollView.bounds.size.height) animated:NO];
+
+            _previousItemView.frame = CGRectMake(0, _scrollView.bounds.size.height * 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+            _curItemView.frame = CGRectMake(0, _scrollView.bounds.size.height * 1, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+            _nextItemView.frame = CGRectMake(0, _scrollView.bounds.size.height * 2, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
+        }
+    }
+    else
+    {
+        _scrollView.contentSize = _scrollView.bounds.size;
+        [_scrollView setContentOffset:CGPointZero animated:NO];
+
+        _previousItemView.frame = _scrollView.bounds;
+        _curItemView.frame = _scrollView.bounds;
+        _nextItemView.frame = _scrollView.bounds;
+    }
+
+
     CGSize tmpSize = [_pageCtrl sizeForNumberOfPages:_pageCtrl.numberOfPages];
     tmpSize.width += 16.0;
     tmpSize.height -= 16.0;
@@ -212,45 +244,14 @@
     // 越界预处理
     if(_dataSourceArr.count <= 0) return;
 
-    // 配置数据源
-    if(_dataSourceArr.count > 1)
-    {
-        if(_scrollDirection == WJCycleScrollDirectionHorizontal)
-        {
-            _scrollView.contentSize = CGSizeMake(_scrollView.bounds.size.width * 3, _scrollView.bounds.size.height);
-            [_scrollView setContentOffset:CGPointMake(_scrollView.bounds.size.width, 0) animated:NO];
-
-            _previousItemView.frame = CGRectMake(_scrollView.bounds.size.width * 0, 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
-            _curItemView.frame = CGRectMake(_scrollView.bounds.size.width * 1, 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
-            _nextItemView.frame = CGRectMake(_scrollView.bounds.size.width * 2, 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
-        }
-        else
-        {
-            _scrollView.contentSize = CGSizeMake(_scrollView.bounds.size.width, _scrollView.bounds.size.height * 3);
-            [_scrollView setContentOffset:CGPointMake(0, _scrollView.bounds.size.height) animated:NO];
-
-            _previousItemView.frame = CGRectMake(0, _scrollView.bounds.size.height * 0, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
-            _curItemView.frame = CGRectMake(0, _scrollView.bounds.size.height * 1, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
-            _nextItemView.frame = CGRectMake(0, _scrollView.bounds.size.height * 2, _scrollView.bounds.size.width, _scrollView.bounds.size.height);
-        }
-    }
-    else
-    {
-        _scrollView.contentSize = _scrollView.bounds.size;
-        [_scrollView setContentOffset:CGPointZero animated:NO];
-
-        _previousItemView.frame = _scrollView.bounds;
-        _curItemView.frame = _scrollView.bounds;
-        _nextItemView.frame = _scrollView.bounds;
-    }
-
     [_curItemView setItem:_dataSourceArr[_itemIdx]];
     [_previousItemView setItem:_dataSourceArr[_itemIdx - 1 >= 0 ? _itemIdx - 1 : _dataSourceArr.count - 1]];
     [_nextItemView setItem:_dataSourceArr[_itemIdx + 1 >= _dataSourceArr.count ? 0 : _itemIdx + 1]];
 
-
     // 配置 pageCtrl
     _pageCtrl.currentPage = _itemIdx;
+
+    [self setNeedsLayout];
 }
 
 #pragma mark - Timer
