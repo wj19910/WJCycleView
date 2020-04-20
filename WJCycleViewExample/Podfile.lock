@@ -14,7 +14,7 @@ PODS:
   - AFNetworking/Serialization (3.2.1)
   - AFNetworking/UIKit (3.2.1):
     - AFNetworking/NSURLSession
-  - WJCycleView (0.0.1)
+  - WJCycleView (0.0.6)
 
 DEPENDENCIES:
   - AFNetworking
@@ -30,8 +30,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   AFNetworking: b6f891fdfaed196b46c7a83cf209e09697b94057
-  WJCycleView: 3afdf37626a7b1b270b1f0578e9f3908f71fea8c
+  WJCycleView: 76cbea29473f9164ef1cff6b38dc80044abd5212
 
 PODFILE CHECKSUM: fcf141f40f36211ccfe06564052e0af11cb08015
 
-COCOAPODS: 1.8.3
+COCOAPODS: 1.9.1
