@@ -19,32 +19,49 @@ pod 'WJCycleView'
 为子视图（cell）配置数据源处理方式， 只需要调用一次。
 
 ```objc
-[WJCycleItemView setupItemHandling:^(WJCycleItemView *itemView, WJCycleItem *item) {
-    if(item.type == WJCycleItemType_Local)
-    {
-		// 加载本地图片
-       itemView.image = [UIImage imageNamed:item.localName];
-    }
-    else if(item.type == WJCycleItemType_Remote)
-    {
-    	// 加载网络图片，本轮播组件没有内部实现对 SDWebImage 或 AFNetworking 的依赖，故这里需要自己实现网图图片加载方法
-      	[itemView setImageWithURL:item.remoteUrl];  // setImageWithURL: 是AFNetworking中定义的方法
-    }
-}];
+ [WJCycleItemView setupItemHandleAction:^(WJCycleItemView *itemView) {
+        if(nil == itemView.item)
+        {
+            itemView.image = nil;
+            return;
+        }
+        
+        if(itemView.item.type == WJCycleItemTypeLocal)
+        {
+            itemView.image = [UIImage imageNamed:itemView.item.imgSrc];
+        }
+        else if(itemView.item.type == WJCycleItemTypeUrl)
+        {
+            NSURL *url = [NSURL URLWithString:itemView.item.imgSrc];
+            if(nil != url)
+            {
+                [itemView setImageWithURL: url];
+            }
+        }
+    }];
 ```
 
-配置数据源并刷新
+配置数据源
 
 ```objc
-// 添加数据源
-NSMutableArray *items = [NSMutableArray array];
-[items addObject:[WJCycleItem itemWithLocalName:@"img1"]];
-[items addObject:[WJCycleItem itemWithLocalName:@"img2"]];
-[items addObject:[WJCycleItem itemWithLocalName:@"img3"]];
-[items addObject:[WJCycleItem itemWithLocalName:@"img4"]];
+[_eg1 reloadData:@[
+    [WJCycleItem itemWithType:WJCycleItemTypeLocal imageSource:@"img1"],
+    [WJCycleItem itemWithType:WJCycleItemTypeLocal imageSource:@"img2"],
+    [WJCycleItem itemWithType:WJCycleItemTypeLocal imageSource:@"img3"],
+    [WJCycleItem itemWithType:WJCycleItemTypeLocal imageSource:@"img4"]
+]];
+```
 
-// 刷新数据
-[_eg1 reloadDataWithSource:items];
+点击事件
+
+```objc 
+_eg1.didSelectItem = ^(WJCycleView *cycleView, id<WJCycleItemProtocol> item) {
+        if([item isKindOfClass:[WJCycleItem class]])
+        {
+            WJCycleItem *cycleItem = (WJCycleItem *)item;
+            NSLog(@"%@", cycleItem.imgSrc);
+        }
+    };
 ```
 
 你还可以通过 `customItemView` 属性自定义轮播视图的显示样式：

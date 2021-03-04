@@ -7,7 +7,6 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "WJCycleProtocol.h"
 #import "WJCycleItemView.h"
 
 
@@ -19,57 +18,35 @@ typedef NS_ENUM(NSInteger, WJCycleScrollDirection)
     WJCycleScrollDirectionVertical          // 竖直
 };
 
-/// pageControl 指示器对齐方式
-typedef NS_ENUM(NSInteger, WJCyclePageControlAlignment)
-{
-    WJCyclePageControlAlignmentRight = 0,   // (底部)水平靠右显示
-    WJCyclePageControlAlignmentCenter,      // (底部)水平居中显示
-};
-
-
-
-/**
- 无限轮播视图组件
- */
+/// 无限轮播视图组件
 @interface WJCycleView : UIView
 
-/// 重新加载数据源
-- (void)reloadDataWithSource:(NSArray<id<WJCycleItemProtocol>> *)dataSrouceArr;
+/// 数据源
+@property (nonatomic, strong, readonly) NSMutableArray<id<WJCycleItemProtocol>> *dataSourceArr;
+
+/// 刷新
+- (void)reloadData:(NSArray<id<WJCycleItemProtocol>> *)aNewDataSrouceArr;
 
 /// 点击事件
 @property (nonatomic, copy) void (^didSelectItem)(WJCycleView *cycleView, id<WJCycleItemProtocol> item);
 
-
-
-
-// MARK: - UI配置
-
-/// 自定义Item视图显示样式 不设置则默认使用 WJCycleItemView
-@property (nonatomic, copy) UIView<WJCycleItemViewProtocol> * (^customItemView)(void);
-
-/// 滚动方向 默认水平滚动
+/// 滚动方向 默认 WJCycleScrollDirectionHorizontal 水平滚动
 @property (nonatomic, assign) WJCycleScrollDirection scrollDirection;
 
+/// 是否自动滚动  默认 YES
+@property (nonatomic, assign) BOOL isAutoScrolling;
 
-/// 是否隐藏指示器
-@property (nonatomic, assign) BOOL pageControlHidden;
-
-/// 指示器自定义配置
-@property (nonatomic, copy) void (^pageControllConfiguration)(UIPageControl *pageCtrl);
-
-/// 指示器对齐方式
-@property (nonatomic, assign) WJCyclePageControlAlignment pageControlAlignment;
-
-
-
-// MARK: - 定时器配置
-
-/// 是否禁用（定时器）自动滚动
-@property (nonatomic, assign) BOOL autoScrollDisable;
-
-/// 自动滚动时间间隔  默认4s (低于1秒的设置将被忽略)
+/// 自动滚动时间间隔  默认 4 秒，区间 [1.0, NSIntegerMax]，超出区间将被忽略
 @property (nonatomic, assign) NSTimeInterval autoScrollTimeInterval;
 
+/// 滚动动画执行时长 默认 0.25 秒，区间 (0.1, 1]，超出区间将被忽略
+@property (nonatomic, assign) NSTimeInterval scrollAnimateDruing;
+
+/// 自定义Item视图
+@property (nonatomic, copy) UIView <WJCycleItemViewProtocol> *(^customItemView)(void);
+
+/// 指示器
+@property (nonatomic, strong, readonly) UIPageControl *pageCtrl;
 
 
 @end

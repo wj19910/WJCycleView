@@ -19,48 +19,62 @@
 
 - (void)dealloc
 {
-    NSLog(@"%s", __func__);
+    NSLog(@"%s, dealloc 打印，WJCycleView 释放正常", __func__);
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
     
-    [WJCycleItemView setupItemHandling:^(WJCycleItemView *itemView, WJCycleItem *item) {
-        if(item.type == WJCycleItemType_Local)
+    
+    /// 自定义示例Item视图对数据源的处理方式
+    [WJCycleItemView setupItemHandleAction:^(WJCycleItemView *itemView) {
+        if(nil == itemView.item)
         {
-            itemView.image = [UIImage imageNamed:item.localName];
+            itemView.image = nil;
+            return;
         }
-        else if(item.type == WJCycleItemType_Remote)
+        
+        if(itemView.item.type == WJCycleItemTypeLocal)
         {
-            [itemView setImageWithURL:item.remoteUrl placeholderImage:[UIImage imageNamed:@"img1"]];
+            itemView.image = [UIImage imageNamed:itemView.item.imgSrc];
+        }
+        else if(itemView.item.type == WJCycleItemTypeUrl)
+        {
+            NSURL *url = [NSURL URLWithString:itemView.item.imgSrc];
+            if(nil != url)
+            {
+                [itemView setImageWithURL: url];
+            }
         }
     }];
     
-    [self example1];
-    [self example2];
-}
-
-
-- (void)example1
-{
-    _eg1.didSelectItem = ^(WJCycleView *cycleView, id<WJCycleItemProtocol> item) {
-        NSLog(@"%@", item.localName);
-    };
-
-    NSMutableArray *items = [NSMutableArray array];
-    [items addObject:[WJCycleItem itemWithLocalName:@"img1"]];
-    [items addObject:[WJCycleItem itemWithLocalName:@"img2"]];
-    [items addObject:[WJCycleItem itemWithLocalName:@"img3"]];
-    [items addObject:[WJCycleItem itemWithLocalName:@"img4"]];
     
-    [_eg1 reloadDataWithSource:items];
-
-}
-
-- (void)example2
-{
+    
+    // 示例1 轮播本地图片
+    [_eg1 reloadData:@[
+        [WJCycleItem itemWithType:WJCycleItemTypeLocal imageSource:@"img1"],
+        [WJCycleItem itemWithType:WJCycleItemTypeLocal imageSource:@"img2"],
+        [WJCycleItem itemWithType:WJCycleItemTypeLocal imageSource:@"img3"],
+        [WJCycleItem itemWithType:WJCycleItemTypeLocal imageSource:@"img4"]
+    ]];
+    _eg1.customItemView = ^UIView<WJCycleItemViewProtocol> *{
+        return [[WJCycleItemView alloc] init];
+    };
+    
+    _eg1.didSelectItem = ^(WJCycleView *cycleView, id<WJCycleItemProtocol> item) {
+        if([item isKindOfClass:[WJCycleItem class]])
+        {
+            WJCycleItem *cycleItem = (WJCycleItem *)item;
+            NSLog(@"%@", cycleItem.imgSrc);
+        }
+    };
+    
+    
+    
+    // 示例2
     WJCycleView *eg2 = [[WJCycleView alloc] initWithFrame:CGRectMake(0, _eg1.bounds.size.height, self.view.bounds.size.width, _eg1.bounds.size.height)];
+    eg2.scrollDirection = WJCycleScrollDirectionVertical;
     [self.view addSubview:eg2];
     eg2.translatesAutoresizingMaskIntoConstraints = NO;
     [NSLayoutConstraint constraintWithItem:eg2 attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_eg1 attribute:NSLayoutAttributeBottom multiplier:1.0 constant:.0].active = YES;
@@ -68,21 +82,20 @@
     [NSLayoutConstraint constraintWithItem:eg2 attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:_eg1 attribute:NSLayoutAttributeRight multiplier:1.0 constant:.0].active = YES;
     [NSLayoutConstraint constraintWithItem:eg2 attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:_eg1 attribute:NSLayoutAttributeHeight multiplier:1.0 constant:.0].active = YES;
 
-
-    NSMutableArray *items = [NSMutableArray array];
-    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://pic1.win4000.com/wallpaper/e/5736dd532289d.jpg"]];
-    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://i1.mopimg.cn/img/tt/2016-12/928/20161229204917696.jpg"]];
-    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://admin.anzow.com/picture/2011052656296900.jpg"]];
-    [items addObject:[WJCycleItem itemWithRemoteUrlString:@"http://p1.pstatp.com/large/pgc-image/15369390831534f32418ae5.jpg"]];
-
-    eg2.scrollDirection = WJCycleScrollDirectionVertical;
-    [eg2 reloadDataWithSource:items];
+    [eg2 reloadData:@[
+        [WJCycleItem itemWithType:WJCycleItemTypeUrl imageSource:@"http://pic1.win4000.com/wallpaper/e/5736dd532289d.jpg"],
+        [WJCycleItem itemWithType:WJCycleItemTypeUrl imageSource:@"http://i1.mopimg.cn/img/tt/2016-12/928/20161229204917696.jpg"],
+        [WJCycleItem itemWithType:WJCycleItemTypeUrl imageSource:@"http://admin.anzow.com/picture/2011052656296900.jpg"],
+        [WJCycleItem itemWithType:WJCycleItemTypeUrl imageSource:@"http://p1.pstatp.com/large/pgc-image/15369390831534f32418ae5.jpg"]
+    ]];
     eg2.didSelectItem = ^(WJCycleView *cycleView, id<WJCycleItemProtocol> item) {
-        NSLog(@"%@", item.remoteUrl);
+        if([item isKindOfClass:[WJCycleItem class]])
+        {
+            WJCycleItem *cycleItem = (WJCycleItem *)item;
+            NSLog(@"%@", cycleItem.imgSrc);
+        }
     };
-
 }
-
 
 
 @end

@@ -9,58 +9,45 @@
 #import "WJCycleItemView.h"
 
 
-void (^wjCycleItemViewDataSourceHandle)(WJCycleItemView *itemView, WJCycleItem *item) = nil;
+@implementation WJCycleItem
 
++ (instancetype)itemWithType:(WJCycleItemType)type imageSource:(NSString *)imgSrc
+{
+    WJCycleItem *item = [[WJCycleItem alloc] init];
+    item.type = type;
+    item.imgSrc = imgSrc;
+    return item;
+}
+
+@end
+
+
+
+
+
+void (^WJCycleItemViewItemHandleAction)(WJCycleItemView *itemView) = nil;
 
 @implementation WJCycleItemView
-
-- (instancetype)initWithCoder:(NSCoder *)aDecoder
-{
-    self = [super initWithCoder:aDecoder];
-    if(self)
-    {
-        [self setup];
-    }
-    return self;
-}
-
-- (instancetype)initWithFrame:(CGRect)frame
-{
-    self = [super initWithFrame:frame];
-    if(self)
-    {
-        [self setup];
-    }
-    return self;
-}
-
-- (void)setup
-{
-    self.backgroundColor = [UIColor clearColor];
-}
-
-+ (void)setupItemHandling:(void (^)(WJCycleItemView *itemView, WJCycleItem *item))handle
-{
-    wjCycleItemViewDataSourceHandle = handle;
-}
 
 - (void)setItem:(WJCycleItem *)item
 {
     _item = item;
-
-    if(nil != _item)
-    {
-        if(nil != wjCycleItemViewDataSourceHandle)
+    
+    __weak typeof(self) weakSelf = self;
+    void (^actionBlick)(void) = ^{
+        if(nil != WJCycleItemViewItemHandleAction)
         {
-            __weak typeof(self) weakSelf = self;
-            wjCycleItemViewDataSourceHandle(weakSelf, weakSelf.item);
+            WJCycleItemViewItemHandleAction(weakSelf);
         }
-    }
-    else
-    {
-        self.image = nil;
-    }
+    };
+    // 确保在主线程执行
+    if([NSThread isMainThread]) { actionBlick(); }
+    else { dispatch_async(dispatch_get_main_queue(), actionBlick); }
 }
 
++ (void)setupItemHandleAction:(void (^)(WJCycleItemView *itemView))action
+{
+    WJCycleItemViewItemHandleAction = action;
+}
 
 @end
